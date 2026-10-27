@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.5.3
+
+### Changed
+- Added demonstration GIF.
+
+## 0.5.3
+
+### Changed
+- Correctly displayed assets in marketplace.
+
 ## 0.5.2
 
 ### Changed

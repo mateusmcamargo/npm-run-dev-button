@@ -8,6 +8,8 @@
 
 A convenient and lightweight status bar button for VS Code inspired by [Live Server](https://marketplace.visualstudio.com/items?itemName=ritwickdey.LiveServer). <br/> Runs `npm run dev` in a dedicated terminal and opens the app in your browser as soon as it is up.
 
+![Demonstration GIF](media/demo.gif)
+
 [![License: MIT](https://img.shields.io/badge/License-MIT-D46FD6)](./LICENSE)
 [![VS Code](https://img.shields.io/badge/VS%20Code-%E2%89%A51.93-0078d7?logo=visualstudiocode&logoColor=white)](https://code.visualstudio.com/)
 [![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?logo=javascript&logoColor=000)](https://developer.mozilla.org/docs/Web/JavaScript)
