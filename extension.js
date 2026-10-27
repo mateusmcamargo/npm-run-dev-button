@@ -18,6 +18,9 @@ const STOP_GRACE_MS = 3000;
 const NO_INTEGRATION_GRACE_MS = 800;
 const VISIBILITY_DEBOUNCE_MS = 300;
 const MIN_STARTUP_TIMEOUT_S = 5;
+// exit codes of a command stopped with ctrl+c: 130 on unix shells, 0xC000013A on windows
+// (reported signed or unsigned depending on the shell)
+const INTERRUPTED_EXIT_CODES = new Set([130, -1073741510, 3221225786]);
 
 // the shell integration api was finalized in vscode 1.93, but some forks lag behind
 const HAS_SHELL_INTEGRATION = typeof vscode.window.onDidChangeTerminalShellIntegration === 'function';
@@ -31,7 +34,7 @@ const HAS_SHELL_INTEGRATION = typeof vscode.window.onDidChangeTerminalShellInteg
  *   command: string,
  *   execution?: vscode.TerminalShellExecution,
  *   started: boolean,
- *   opened: boolean,
+ *   startupDone: boolean,
  *   detectedUrl?: string,
  *   outputSettled: boolean,
  *   baseline: Set<number>,
@@ -305,7 +308,8 @@ async function resolveCwd(folder, subdir) {
 /** @returns {Session} */
 function openSession(cwd, settings) {
     const command = settings.get('command');
-    const shellPath = settings.get('shellPath') || (process.platform === 'win32' ? undefined : 'bash');
+    // empty = the default terminal profile of the user
+    const shellPath = settings.get('shellPath') || undefined;
     const terminal = vscode.window.createTerminal({
         name: settings.get('terminalName'),
         cwd,
@@ -325,7 +329,7 @@ function openSession(cwd, settings) {
         command,
         execution: undefined,
         started: false,
-        opened: false,
+        startupDone: false,
         detectedUrl: undefined,
         outputSettled: false,
         baseline: new Set(),
@@ -364,10 +368,12 @@ async function launch(s, settings) {
 // fixed budget per phase. returns the url that is accepting connections, or undefined
 async function findRunningServer(s, settings, deadline) {
     const { signal } = s.abort;
+    // an execution adopted later (see onLateExecutionStart) is not read, so this is fixed here
+    const readsOutput = Boolean(s.execution);
     const candidates = candidateUrls(settings.get('fallbackUrl'));
     const fallbackPort = portOf(settings.get('fallbackUrl'));
 
-    if (s.execution) {
+    if (readsOutput) {
         detectUrl(s.execution, signal, Math.max(0, deadline - Date.now())).then((url) => {
             s.outputSettled = true;
             if (url) {
@@ -392,7 +398,7 @@ async function findRunningServer(s, settings, deadline) {
                 const isNew = !s.baseline.has(port);
                 // without the output there is no way to tell an old server on the fallback port
                 // from the new one, so that single port is accepted either way
-                if (isNew || (!s.execution && port === fallbackPort)) {
+                if (isNew || (!readsOutput && port === fallbackPort)) {
                     log.info(`port ${port} started listening`);
                     return candidates.get(port);
                 }
@@ -474,26 +480,35 @@ async function start() {
         await openWhenReady(s, settings);
         // startup phase is over (browser opened, disabled or given up on): from now on the command
         // ending by itself, e.g. with ctrl+c, is a normal thing and not worth a warning
-        s.opened = true;
+        s.startupDone = true;
     } catch (error) {
         if (s && session === s) stop();
         showError(error);
     }
 }
 
-// the command ended by itself: tell the user if that happened before the server was ready
+// the command ended by itself: tell the user if that happened before the server was ready,
+// or later with a failure (ctrl+c is a normal way to stop a dev server)
 function onExecutionEnd(s, exitCode) {
     idleTerminal = s.terminal;
-    const early = !s.opened;
+    const early = !s.startupDone;
+    const failed = exitCode !== undefined && exitCode !== 0 && !INTERRUPTED_EXIT_CODES.has(exitCode);
     endSession(s);
-    log.info(`the command ended${exitCode === undefined ? '' : ` with exit code ${exitCode}`}`);
-    if (early && s.started) {
-        notify(
-            'warning',
-            `"${s.command}" ended${exitCode === undefined ? '' : ` with exit code ${exitCode}`} before the server was ready. ` +
-                'Check the terminal output.'
-        );
+    const withCode = exitCode === undefined ? '' : ` with exit code ${exitCode}`;
+    log.info(`the command ended${withCode}`);
+    if (!s.started) return;
+    if (early) {
+        notify('warning', `"${s.command}" ended${withCode} before the server was ready. Check the terminal output.`);
+    } else if (failed) {
+        notify('warning', `"${s.command}" failed${withCode}. Check the terminal output.`);
     }
+}
+
+// shell integration that showed up after the command was sent as plain text: adopt the
+// execution, so the end of the command is still noticed and the button resets
+function onLateExecutionStart(s, execution) {
+    s.execution = execution;
+    log.info('shell integration became active after the command was sent, its end will be tracked');
 }
 
 function activate(context) {
@@ -536,6 +551,10 @@ function activate(context) {
     // reset the button when the process ends but the terminal stays open
     if (HAS_SHELL_INTEGRATION) {
         subscriptions.push(
+            vscode.window.onDidStartTerminalShellExecution((e) => {
+                const s = session;
+                if (s?.started && !s.execution && e.terminal === s.terminal) onLateExecutionStart(s, e.execution);
+            }),
             vscode.window.onDidEndTerminalShellExecution((e) => {
                 if (session && e.execution === session.execution) onExecutionEnd(session, e.exitCode);
             })
@@ -550,4 +569,9 @@ function deactivate() {
     session?.abort.abort();
 }
 
-module.exports = { activate, deactivate };
+module.exports = {
+    activate,
+    deactivate,
+    // exposed for the unit tests only
+    _test: { normalizeUrl, detectUrl, portOf, candidateUrls, INTERRUPTED_EXIT_CODES },
+};

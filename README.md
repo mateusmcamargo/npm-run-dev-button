@@ -23,22 +23,17 @@ A convenient and lightweight status bar button for VS Code inspired by [Live Ser
 [![Next.js](https://img.shields.io/badge/Next.js-black?logo=next.js&logoColor=white)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-%2320232a.svg?logo=react&logoColor=%2361DAFB)](https://react.dev/)
 [![Node.js](https://img.shields.io/badge/Node.js-6DA55F?logo=node.js&logoColor=white)](https://nodejs.org/)
-[![GNU Bash](https://img.shields.io/badge/GNU%20Bash-4EAA25?logo=gnubash&logoColor=fff)](https://www.gnu.org/software/bash/)
 
 [![Version](https://img.shields.io/visual-studio-marketplace/v/mateuscamargo.npm-run-dev-button)](https://marketplace.visualstudio.com/items?itemName=mateuscamargo.npm-run-dev-button)
 [![Installs](https://img.shields.io/visual-studio-marketplace/i/mateuscamargo.npm-run-dev-button)](https://marketplace.visualstudio.com/items?itemName=mateuscamargo.npm-run-dev-button)
 [![Rating](https://img.shields.io/visual-studio-marketplace/r/mateuscamargo.npm-run-dev-button)](https://marketplace.visualstudio.com/items?itemName=mateuscamargo.npm-run-dev-button&ssr=false#review-details)
-
-<!-- todo: add a short demo
-![Demo](images/demo.gif)
--->
 
 </div>
 
 ## Features
 
 - **One-click start:** renders the <code><img src="./icons/debug-start.png" width="12" height="12" alt="▶" /> npm run dev</code> button on the right side of the status bar whenever the workspace contains a `package.json`;
-- **Dedicated terminal:** opens a bash terminal with customizable name, icon and color;
+- **Dedicated terminal:** opens a terminal with customizable name, icon and color;
 - **Automatic URL detection:** reads the terminal output to find the server URL printed by Vite, Next.js, Create React App and similar tools, works even when the port changes;
 - **Opens when ready:** the browser opens only after the server actually responds, never on a blank "connection refused" page;
 - **One-click stop:** while running, the button turns into a magenta <code><img src="./icons/debug-stop.png" width="12" height="12" alt="■" /> Stop Dev</code>. Clicking it again closes the terminal and stops the server;
@@ -60,7 +55,6 @@ A convenient and lightweight status bar button for VS Code inspired by [Live Ser
 |---|---|
 | VS Code **1.93** or newer | Needed for the terminal *shell integration* API used for URL detection. |
 | Node.js and a package manager | `npm` by default. |
-| `bash` | Default on Linux and macOS. Not required on Windows, where the default terminal profile is used (see [Windows](#windows)). |
 
 ## Installation
 
@@ -73,7 +67,7 @@ A convenient and lightweight status bar button for VS Code inspired by [Live Ser
 **From a `.vsix` file**
 
 ```bash
-code --install-extension npm-run-dev-button-0.5.2.vsix
+code --install-extension npm-run-dev-button-<version>.vsix
 ```
 
 ## Usage
@@ -105,14 +99,14 @@ Find them under **Settings > Extensions > NPM Run Dev Button**, or edit `setting
 | `npmDevButton.terminalName` | `dev` | Name of the created terminal. |
 | `npmDevButton.terminalIcon` | `developer-tools` | ID of a [codicon](https://microsoft.github.io/vscode-codicons/dist/codicon.html). |
 | `npmDevButton.terminalColor` | `terminal.ansiMagenta` | ID of a theme color, e.g. `terminal.ansiGreen` or `terminal.ansiCyan`. |
-| `npmDevButton.shellPath` | `""` | Path to bash. Empty means `bash` on Linux/macOS and the default profile on Windows. |
+| `npmDevButton.shellPath` | `""` | Path to the shell used by the terminal. Empty means the default terminal profile of VS Code. Use `bash` to get the behavior of versions before 0.6.0. User (or remote) settings only, a workspace cannot override it. |
 | `npmDevButton.fallbackUrl` | `http://localhost:5173` | URL used when the address cannot be read from the terminal output (e.g. shell integration off). Other common dev ports are checked too. |
 | `npmDevButton.openBrowser` | `true` | Open the default browser when the server is up. |
 | `npmDevButton.startupTimeoutSeconds` | `60` | Maximum time (minimum 5) to wait for the server, counted from the moment the command starts, before giving up on opening the browser. |
 
 ### Example
 
-A pnpm monorepo with the web app in `apps/web`, a cyan terminal with the name 'Debug App', debug icon and Git Bash on Windows:
+A pnpm monorepo with the web app in `apps/web`, and a cyan terminal with the name 'Debug App' and the debug icon:
 
 ```json
 {
@@ -120,10 +114,11 @@ A pnpm monorepo with the web app in `apps/web`, a cyan terminal with the name 'D
     "npmDevButton.terminalColor": "terminal.ansiCyan",
     "npmDevButton.terminalIcon": "debug",
     "npmDevButton.command": "pnpm dev",
-    "npmDevButton.workingDirectory": "apps/web",
-    "npmDevButton.shellPath": "C:\\Program Files\\Git\\bin\\bash.exe"
+    "npmDevButton.workingDirectory": "apps/web"
 }
 ```
+
+`npmDevButton.shellPath` is ignored in the workspace `.vscode/settings.json`, set it in your user settings instead.
 
 ## Notes
 
@@ -159,7 +154,7 @@ Run **NPM Run Dev: Show Log** from the Command Palette: it tells what the extens
 
 - *"shell integration is not available"*: the server address cannot be read from the terminal, so the extension looks for a newly listening port (`fallbackUrl` and the usual ports such as 3000, 4200, 5173 and 8080). If your server uses another port, set `npmDevButton.fallbackUrl`. Also check that `terminal.integrated.shellIntegration.enabled` is on.
 - *"No server was found within Ns"*: the server is slow to start. Increase `npmDevButton.startupTimeoutSeconds`.
-- *"ended with exit code N"*: the command failed. Read the `dev` terminal output.
+- *"ended with exit code N"* or *"failed with exit code N"*: the command failed. Read the `dev` terminal output.
 - Something else is already using the port: stop it first, or set `fallbackUrl` to the new port.
 
 </details>
@@ -184,11 +179,16 @@ An installed copy of the extension is running next to the development copy. Unin
 # run in development mode:
 # open this folder in VS Code and press F5 (the "Run Extension" configuration)
 
+# install the dev dependencies, then lint and run the unit tests
+npm install
+npm run lint
+npm test
+
 # build the .vsix
-npx @vscode/vsce package
+npm run package
 
 # install it
-code --install-extension npm-run-dev-button-0.5.2.vsix
+code --install-extension npm-run-dev-button-<version>.vsix
 ```
 
 ## Contributing

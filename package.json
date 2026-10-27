@@ -2,7 +2,7 @@
     "name": "npm-dev-button",
     "displayName": "NPM Run Dev Button for Status Bar",
     "description": "Status bar button that runs 'npm run dev' in a custom terminal and opens the server in your browser.",
-    "version": "0.5.4",
+    "version": "0.6.0",
     "publisher": "mateuscamargo",
     "license": "MIT",
     "repository": {
@@ -40,7 +40,9 @@
     ],
     "main": "./extension.js",
     "scripts": {
-        "package": "vsce package"
+        "package": "vsce package",
+        "lint": "eslint .",
+        "test": "node --test test/"
     },
     "contributes": {
         "commands": [
@@ -84,7 +86,8 @@
                 "npmDevButton.shellPath": {
                     "type": "string",
                     "default": "",
-                    "description": "Path to bash. Empty = 'bash' on Linux/macOS and the default profile on Windows (e.g. C:\\Program Files\\Git\\bin\\bash.exe)."
+                    "scope": "machine",
+                    "description": "Path to the shell used by the terminal (e.g. C:\\Program Files\\Git\\bin\\bash.exe). Empty = the default terminal profile of VS Code."
                 },
                 "npmDevButton.fallbackUrl": {
                     "type": "string",
@@ -111,5 +114,11 @@
             "description": "This extension runs a command from the workspace in a terminal, so it is disabled in Restricted Mode."
         },
         "virtualWorkspaces": false
+    },
+    "devDependencies": {
+        "@eslint/js": "^10.0.1",
+        "@vscode/vsce": "^4.0.0",
+        "eslint": "^10.13.0",
+        "globals": "^17.13.0"
     }
 }
