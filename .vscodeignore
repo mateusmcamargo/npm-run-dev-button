@@ -19,6 +19,7 @@ Gemfile
 Gemfile.lock
 _config.yml
 vsc-extension-quickstart.md
+COMMITS.md
 
 # assets not needed at runtime
 icons/**
@@ -28,6 +29,7 @@ media/**
 .gitignore
 tsconfig.json
 tslint.json
+eslint.config.js
 .travis.yml
 appveyor.yml
 package-lock.json
