@@ -1,6 +1,20 @@
 # Changelog
 
-## 0.5.3
+## 0.6.0
+
+### Changed
+- The terminal now uses the default terminal profile of VS Code instead of `bash`. Set `"npmDevButton.shellPath": "bash"` to keep the old behavior.
+- `shellPath` can only be set in user (or remote) settings, a workspace cannot override it.
+
+### Fixed
+- If shell integration becomes active only after the command was sent as plain text, the end of the command is still detected and the button resets.
+- Stopping the server with `Ctrl+C` on Windows no longer counts as a failure.
+
+### Added
+- A warning when the command fails after the startup phase (exit codes from `Ctrl+C` are ignored).
+- ESLint and unit tests (`npm run lint`, `npm test`).
+
+## 0.5.4
 
 ### Changed
 - Added demonstration GIF.
